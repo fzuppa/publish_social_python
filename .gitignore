@@ -1,0 +1,17 @@
+# OAuth tokens
+instagram_token.json
+linkedin_token.json
+youtube-oauth2.yaml
+youtube_config.json
+
+# App credentials
+instagram_config.json
+linkedin_config.json
+
+# Python virtual environments
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
