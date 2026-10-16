@@ -1,5 +1,5 @@
 import pytest
-from linkedin_post import parse_args
+from linkedin_post import parse_args, post_url
 
 
 def test_text_only():
@@ -7,6 +7,16 @@ def test_text_only():
     assert args.text == 'Hello LinkedIn'
     assert args.image is None
     assert args.visibility == 'PUBLIC'
+    assert args.dry_run is False
+
+
+def test_dry_run_flag():
+    args = parse_args(['--text', 'Hello', '--dry-run'])
+    assert args.dry_run is True
+
+
+def test_post_url():
+    assert post_url('urn:li:share:123') == 'https://www.linkedin.com/feed/update/urn:li:share:123/'
 
 
 def test_with_image_and_visibility():

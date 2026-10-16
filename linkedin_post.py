@@ -63,6 +63,10 @@ def upload_image(author_urn, headers, image_path):
     return image_urn
 
 
+def post_url(post_id):
+    return f"https://www.linkedin.com/feed/update/{post_id}/"
+
+
 def publish_post(opts):
     author_urn, headers = load_auth()
 
@@ -80,14 +84,23 @@ def publish_post(opts):
     }
 
     if opts.image:
-        image_urn = upload_image(author_urn, headers, opts.image)
-        body['content'] = {'media': {'id': image_urn}}
+        if opts.dry_run:
+            body['content'] = {'media': {'id': f"<would upload {opts.image}>"}}
+        else:
+            image_urn = upload_image(author_urn, headers, opts.image)
+            body['content'] = {'media': {'id': image_urn}}
+
+    if opts.dry_run:
+        print("Dry run: would POST to", f"{API_BASE}/posts")
+        print(json.dumps(body, indent=2, ensure_ascii=False))
+        return
 
     print("LinkedIn: creating post...")
     res = requests.post(f"{API_BASE}/posts", headers=headers, json=body)
     if res.status_code == 201:
         post_id = res.headers.get('x-restli-id', '<unknown>')
         print(f"LinkedIn: post published ({post_id}).")
+        print(post_url(post_id))
     else:
         print(f"LinkedIn error {res.status_code}: {res.text}")
         sys.exit(1)
@@ -99,6 +112,8 @@ def parse_args(argv=None):
     parser.add_argument('--image', help='Path to an image file to attach')
     parser.add_argument('--visibility', default='PUBLIC', choices=['PUBLIC', 'CONNECTIONS'],
                         help='Post visibility (default: PUBLIC)')
+    parser.add_argument('--dry-run', dest='dry_run', action='store_true',
+                        help='Print the request payload instead of publishing')
     return parser.parse_args(argv)
 
 
