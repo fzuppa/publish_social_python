@@ -1,102 +1,102 @@
 # publish_social_python
 
-Command-line scripts to publish videos (reels) and LinkedIn posts to YouTube, Instagram and LinkedIn, plus an MCP server that exposes the video publisher as a tool for Claude Desktop / Cowork.
+Scripts de línea de comandos para publicar videos (reels) y posts de LinkedIn en YouTube, Instagram y LinkedIn, más un servidor MCP que expone el publicador de videos como herramienta para Claude Desktop / Cowork.
 
 ## Scripts
 
-| Script | What it does |
+| Script | Qué hace |
 |---|---|
-| [`publish_social.py`](publish_social.py) | Uploads a video to YouTube, Instagram Reels and/or LinkedIn in one command. |
-| [`linkedin_post.py`](linkedin_post.py) | Publishes a text post (optionally with one image) to LinkedIn, via the modern Posts API. |
-| [`linkedin_auth.py`](linkedin_auth.py) | One-time (~every 60 days) OAuth flow that creates/renews `linkedin_token.json`, used by both LinkedIn scripts above. |
-| [`publish_social_mcp.py`](publish_social_mcp.py) | MCP server wrapping `publish_social.py` as a single `publish_reel` tool. |
+| [`publish_social.py`](publish_social.py) | Sube un video a YouTube, Instagram Reels y/o LinkedIn en un solo comando. |
+| [`linkedin_post.py`](linkedin_post.py) | Publica un post de texto (opcionalmente con una imagen) en LinkedIn, usando la API moderna de Posts. |
+| [`linkedin_auth.py`](linkedin_auth.py) | Flujo OAuth (a correr cada ~60 días) que crea/renueva `linkedin_token.json`, usado por los dos scripts de LinkedIn de arriba. |
+| [`publish_social_mcp.py`](publish_social_mcp.py) | Servidor MCP que envuelve `publish_social.py` como una única herramienta `publish_reel`. |
 
-## Setup
+## Instalación
 
 ```bash
 python3 -m venv venv
 venv/bin/pip install -r requirements.txt
 ```
 
-## Credentials
+## Credenciales
 
-Each platform needs its own credentials file in the project root. None of these are committed — they're all listed in [`.gitignore`](.gitignore) — so you need to create them yourself.
+Cada plataforma necesita su propio archivo de credenciales en la raíz del proyecto. Ninguno está commiteado — todos figuran en [`.gitignore`](.gitignore) — así que tenés que crearlos vos.
 
 ### YouTube
 
-1. In Google Cloud Console, create an OAuth client of type "Desktop app" with the YouTube Data API v3 enabled.
-2. Copy [`youtube_config.example.json`](youtube_config.example.json) to `youtube_config.json` and fill in `client_id` / `client_secret`.
-3. Generate `youtube-oauth2.yaml` with your own OAuth helper for the YouTube API (`publish_social.py` only reads this file — it doesn't do the authorization flow itself). It must contain a `default` key holding a JSON string with `client_id`, `access_token`, `refresh_token`, `scope` and `expiration_time_millis`; the access token is refreshed automatically from the refresh token on every run.
+1. En Google Cloud Console, creá un cliente OAuth de tipo "Desktop app" con la YouTube Data API v3 habilitada.
+2. Copiá [`youtube_config.example.json`](youtube_config.example.json) a `youtube_config.json` y completá `client_id` / `client_secret`.
+3. Generá `youtube-oauth2.yaml` con tu propio helper OAuth para la API de YouTube (`publish_social.py` solo lee este archivo, no hace el flujo de autorización). Debe tener una clave `default` con un JSON (como string) que incluya `client_id`, `access_token`, `refresh_token`, `scope` y `expiration_time_millis`; el access token se renueva automáticamente a partir del refresh token en cada corrida.
 
 ### Instagram
 
-1. In Meta for Developers, get a long-lived **Page** access token for the Facebook Page linked to your Instagram professional account, with the `instagram_basic` and `instagram_content_publish` scopes.
-2. Copy [`instagram_token.example.json`](instagram_token.example.json) to `instagram_token.json` and fill in `page_access_token` and `instagram_account_id` (the Instagram Business Account ID behind that page).
-3. This token does not need periodic renewal.
+1. En Meta for Developers, conseguí un token de acceso de **Página** de larga duración para la Facebook Page vinculada a tu cuenta profesional de Instagram, con los scopes `instagram_basic` e `instagram_content_publish`.
+2. Copiá [`instagram_token.example.json`](instagram_token.example.json) a `instagram_token.json` y completá `page_access_token` e `instagram_account_id` (el ID de la cuenta de Instagram Business detrás de esa página).
+3. Este token no necesita renovación periódica.
 
-Instagram's API fetches the video itself, so publishing to Instagram always needs a **public** URL (`--video-url`), not a local file.
+La API de Instagram descarga el video ella misma, así que publicar en Instagram siempre requiere una URL **pública** (`--video-url`), no un archivo local.
 
 ### LinkedIn
 
-1. In the LinkedIn Developer Portal, create an app with the `w_member_social` scope (add `openid` and `profile` too) and `http://localhost:8080/callback` as an authorized redirect URL.
-2. Copy [`linkedin_config.example.json`](linkedin_config.example.json) to `linkedin_config.json` and fill in `client_id` / `client_secret`.
-3. Run the authorization flow:
+1. En el LinkedIn Developer Portal, creá una app con el scope `w_member_social` (agregá también `openid` y `profile`) y `http://localhost:8080/callback` como redirect URL autorizada.
+2. Copiá [`linkedin_config.example.json`](linkedin_config.example.json) a `linkedin_config.json` y completá `client_id` / `client_secret`.
+3. Corré el flujo de autorización:
    ```bash
    venv/bin/python linkedin_auth.py
    ```
-   This prints a URL — open it, log in and authorize the app. The script catches the redirect on `localhost:8080` and writes `linkedin_token.json`.
-4. LinkedIn access tokens for this app expire after ~60 days and LinkedIn doesn't issue a refresh token for this grant type, so re-run step 3 whenever `publish_social.py` or `linkedin_post.py` fail with an expired/invalid token error.
+   Esto imprime una URL — abrila, iniciá sesión y autorizá la app. El script captura el redirect en `localhost:8080` y escribe `linkedin_token.json`.
+4. Los access tokens de LinkedIn para esta app vencen a los ~60 días y LinkedIn no emite refresh token para este tipo de grant, así que volvé a correr el paso 3 cuando `publish_social.py` o `linkedin_post.py` fallen con un error de token vencido/inválido.
 
-## Usage
+## Uso
 
-### Publish a video (reel)
+### Publicar un video (reel)
 
 ```bash
 venv/bin/python publish_social.py --instagram --linkedin --youtube \
-  --file /path/to/video.mp4 \
-  --video-url "https://your-public-url/video.mp4" \
-  --title "My reel" \
-  --description "Description" \
+  --file /ruta/al/video.mp4 \
+  --video-url "https://tu-url-publica/video.mp4" \
+  --title "Mi reel" \
+  --description "Descripción" \
   --keywords "tag1,tag2" \
   --privacy-status public \
-  --playlist "My playlist"
+  --playlist "Mi playlist"
 ```
 
-- `--youtube` / `--instagram` / `--linkedin`: which platforms to publish to (at least one).
-- `--file`: local video file, required for YouTube and LinkedIn.
-- `--video-url`: public video URL, required for Instagram.
-- `--title`, `--description`, `--keywords` (comma-separated): shared across platforms.
-- `--privacy-status` (`public`/`private`/`unlisted`), `--category-id`, `--playlist`: YouTube-only.
+- `--youtube` / `--instagram` / `--linkedin`: a qué plataformas publicar (al menos una).
+- `--file`: video local, requerido para YouTube y LinkedIn.
+- `--video-url`: URL pública del video, requerida para Instagram.
+- `--title`, `--description`, `--keywords` (separadas por coma): compartidos entre plataformas.
+- `--privacy-status` (`public`/`private`/`unlisted`), `--category-id`, `--playlist`: solo YouTube.
 
-### Publish a LinkedIn text/image post
+### Publicar un post de texto/imagen en LinkedIn
 
 ```bash
-venv/bin/python linkedin_post.py --text "Hello LinkedIn" \
-  [--image photo.jpg] \
+venv/bin/python linkedin_post.py --text "Hola LinkedIn" \
+  [--image foto.jpg] \
   [--visibility PUBLIC|CONNECTIONS] \
   [--dry-run]
 ```
 
-- `--text` is the post body (required). Characters LinkedIn's markup reserves (`\ ( ) [ ] { } < > @ * _ ~ |`) are escaped automatically, so they appear literally instead of breaking the post's rendering.
-- `--image` attaches a single local image.
-- `--dry-run` prints the exact request payload — without uploading the image or publishing anything — so you can check it before a post goes live.
+- `--text` es el cuerpo del post (requerido). Los caracteres que el markup de LinkedIn reserva (`\ ( ) [ ] { } < > @ * _ ~ |`) se escapan automáticamente, así aparecen tal cual en vez de romper el renderizado del post.
+- `--image` adjunta una única imagen local.
+- `--dry-run` imprime el payload exacto del request —sin subir la imagen ni publicar nada— para poder revisarlo antes de que el post quede público.
 
-### MCP server
+### Servidor MCP
 
-Register `publish_social_mcp.py` so an MCP-aware client (Claude Desktop, Cowork, etc.) can call `publish_reel` directly, e.g. in `claude_desktop_config.json`:
+Registrá `publish_social_mcp.py` para que un cliente compatible con MCP (Claude Desktop, Cowork, etc.) pueda invocar `publish_reel` directamente, por ejemplo en `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "publish-social": {
-      "command": "/absolute/path/to/publish_social_python/venv/bin/python",
-      "args": ["/absolute/path/to/publish_social_python/publish_social_mcp.py"]
+      "command": "/ruta/absoluta/a/publish_social_python/venv/bin/python",
+      "args": ["/ruta/absoluta/a/publish_social_python/publish_social_mcp.py"]
     }
   }
 }
 ```
 
-The tool takes the same parameters as `publish_social.py` (`title`, `description`, `file`, `video_url`, `instagram`, `linkedin`, `youtube`, `keywords`, `privacy_status`, `playlist`) and returns the wrapped script's stdout/stderr and exit code.
+La herramienta toma los mismos parámetros que `publish_social.py` (`title`, `description`, `file`, `video_url`, `instagram`, `linkedin`, `youtube`, `keywords`, `privacy_status`, `playlist`) y devuelve el stdout/stderr y exit code del script que envuelve.
 
 ## Tests
 
@@ -104,7 +104,7 @@ The tool takes the same parameters as `publish_social.py` (`title`, `description
 venv/bin/python -m pytest
 ```
 
-## Security notes
+## Notas de seguridad
 
-- Never commit `*_token.json`, `*_config.json` or `youtube-oauth2.yaml` — they hold real credentials and are already excluded via `.gitignore`.
-- All requests to the YouTube, Instagram and LinkedIn APIs go over HTTPS with TLS certificate verification enabled (the default `requests` behavior).
+- Nunca commitees `*_token.json`, `*_config.json` ni `youtube-oauth2.yaml` — tienen credenciales reales y ya están excluidos vía `.gitignore`.
+- Todos los requests a las APIs de YouTube, Instagram y LinkedIn van por HTTPS con verificación de certificados TLS habilitada (el comportamiento por defecto de `requests`).
