@@ -24,6 +24,19 @@ API_BASE = 'https://api.linkedin.com/rest'
 # pin to the current month rather than a hardcoded value that goes stale.
 LINKEDIN_API_VERSION = date.today().strftime('%Y%m')
 
+# LinkedIn's commentary field uses a lightweight inline markup where these
+# characters are reserved; an unescaped one can truncate or misrender the
+# post. Escaping backslash itself must happen first, so it doesn't re-escape
+# the backslashes this function inserts for the other characters.
+# https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/plain-text-share-content
+RESERVED_CHARS = ['\\', '(', ')', '[', ']', '{', '}', '<', '>', '@', '*', '_', '~', '|']
+
+
+def escape_commentary(text):
+    for ch in RESERVED_CHARS:
+        text = text.replace(ch, '\\' + ch)
+    return text
+
 
 def load_auth():
     with open(LINKEDIN_TOKEN_PATH) as f:
@@ -72,7 +85,7 @@ def publish_post(opts):
 
     body = {
         'author': author_urn,
-        'commentary': opts.text,
+        'commentary': escape_commentary(opts.text),
         'visibility': opts.visibility,
         'distribution': {
             'feedDistribution': 'MAIN_FEED',

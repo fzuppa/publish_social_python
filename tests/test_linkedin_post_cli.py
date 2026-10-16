@@ -1,5 +1,5 @@
 import pytest
-from linkedin_post import parse_args, post_url
+from linkedin_post import escape_commentary, parse_args, post_url
 
 
 def test_text_only():
@@ -17,6 +17,26 @@ def test_dry_run_flag():
 
 def test_post_url():
     assert post_url('urn:li:share:123') == 'https://www.linkedin.com/feed/update/urn:li:share:123/'
+
+
+def test_escape_reserved_chars():
+    raw = '(a)[b]{c}<d>@e*f_g~h|i'
+    expected = r'\(a\)\[b\]\{c\}\<d\>\@e\*f\_g\~h\|i'
+    assert escape_commentary(raw) == expected
+
+
+def test_escape_backslash_before_other_chars():
+    # Literal backslash followed by a literal '(': the backslash must be
+    # escaped first, or it would swallow the escaping of the '(' instead of
+    # the other way around.
+    raw = 'a\\(b'
+    expected = 'a' + '\\' * 3 + '(b'
+    assert escape_commentary(raw) == expected
+
+
+def test_escape_leaves_plain_text_and_hashtags_untouched():
+    raw = 'Hola comunidad, gracias! #agiles2026 #agilidad'
+    assert escape_commentary(raw) == raw
 
 
 def test_with_image_and_visibility():
