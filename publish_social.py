@@ -7,7 +7,6 @@ import sys
 import time
 
 import requests
-import urllib3
 import yaml
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -113,7 +112,6 @@ def publish_youtube(opts):
 
 
 def publish_instagram(opts):
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     with open(INSTAGRAM_TOKEN_PATH) as f:
         token_data = json.load(f)
     token = token_data['page_access_token']
@@ -130,7 +128,6 @@ def publish_instagram(opts):
             'caption': caption,
             'access_token': token,
         },
-        verify=False,
     )
     data = res.json()
     if 'error' in data:
@@ -146,7 +143,6 @@ def publish_instagram(opts):
         status_res = requests.get(
             f"https://graph.facebook.com/v19.0/{container_id}",
             params={'fields': 'status_code', 'access_token': token},
-            verify=False,
         )
         status_data = status_res.json()
         status_code = status_data.get('status_code')
@@ -166,7 +162,6 @@ def publish_instagram(opts):
     pub_res = requests.post(
         f"https://graph.facebook.com/v19.0/{ig_id}/media_publish",
         data={'creation_id': container_id, 'access_token': token},
-        verify=False,
     )
     pub_data = pub_res.json()
     if 'error' in pub_data:
@@ -176,7 +171,6 @@ def publish_instagram(opts):
 
 
 def publish_linkedin(opts):
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     with open(LINKEDIN_TOKEN_PATH) as f:
         token_data = json.load(f)
     token = token_data['access_token']
@@ -207,7 +201,6 @@ def publish_linkedin(opts):
             }
         },
         headers=headers,
-        verify=False,
     )
     register_data = register_res.json()
     if register_data.get('status') and register_data['status'] != 200:
@@ -226,7 +219,6 @@ def publish_linkedin(opts):
             upload_url,
             data=f,
             headers={'Content-Type': 'application/octet-stream'},
-            verify=False,
         )
 
     # Step 3: create UGC post
@@ -252,7 +244,6 @@ def publish_linkedin(opts):
             },
         },
         headers=headers,
-        verify=False,
     )
     if post_res.status_code == 201:
         print(f"LinkedIn: post published ({post_res.headers.get('x-restli-id')}).")
